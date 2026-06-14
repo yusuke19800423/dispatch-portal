@@ -9,6 +9,48 @@
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <style>html,body,#root{margin:0;height:100%;background:#15181d;}</style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBcYi3osXuor-LfHp83gcZuUux6RAGoeSM",
+    authDomain: "rescue-training-app.firebaseapp.com",
+    projectId: "rescue-training-app",
+    storageBucket: "rescue-training-app.firebasestorage.app",
+    messagingSenderId: "898474111082",
+    appId: "1:898474111082:web:bfe1efd1f686695ac7da13"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window.cloudStorage = {
+    async get(key) {
+      try {
+        const ref = doc(db, "dispatch_settings", key);
+        const snap = await getDoc(ref);
+        return snap.exists() ? { value: JSON.stringify(snap.data().value) } : null;
+      } catch(e) { console.warn("Firebase get error:", e); return null; }
+    },
+    async set(key, value) {
+      try {
+        const ref = doc(db, "dispatch_settings", key);
+        await setDoc(ref, { value: JSON.parse(value), updatedAt: new Date().toISOString() });
+        return { value };
+      } catch(e) { console.warn("Firebase set error:", e); return null; }
+    }
+  };
+  window.storage = {
+    async get(k) {
+      const cloud = await window.cloudStorage.get(k);
+      if (cloud) return cloud;
+      try { const v = localStorage.getItem(k); return v == null ? null : { value: v }; } catch(e) { return null; }
+    },
+    async set(k, v) {
+      localStorage.setItem(k, v);
+      return await window.cloudStorage.set(k, v);
+    }
+  };
+  console.log("Firebase initialized: dispatch_settings");
+</script>
 </head>
 <body>
 <div id="root"></div>
