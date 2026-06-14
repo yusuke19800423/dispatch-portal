@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>出動体制ポータル｜蓮田市消防本部 第２救助係</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<style>html,body,#root{margin:0;height:100%;background:#15181d;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+window.storage = {
+  async get(k){ try{ const v=localStorage.getItem(k); return v==null?null:{value:v}; }catch(e){ return null; } },
+  async set(k,v){ try{ localStorage.setItem(k,v); return {value:v}; }catch(e){ return null; } },
+};
+</script>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect } = React;
+
+const DATA = {"rank": {"山口秀夫": "消防司令", "萩原秀長": "消防司令", "齋藤英雄": "消防司令", "森田光": "消防士長", "柳田光星": "消防副士長", "渡邉大和": "消防副士長", "小川勝也": "消防司令", "渡邉拓也": "消防士長", "菊地裕樹": "消防副士長", "福本洋樹": "消防士", "岡田浩弥": "消防士", "中嶋雅人": "消防司令補", "神屋敷駿也": "消防司令補", "小島佑太": "消防士", "鍵山大地": "消防士", "蔵品拓": "消防士", "金子直樹": "消防司令", "大越正和": "消防司令補", "佐藤勇人": "消防士長", "森久大悟": "消防副士長", "山田光太": "消防副士長", "土渕高広": "消防司令補", "橋本和明": "消防士長", "川口千聡": "消防副士長", "山口澪音": "消防士", "落合祐輔": "消防司令補", "飯野勝大": "消防士長", "佐々木瞭維": "消防副士長", "吉田昌太": "消防副士長", "巣瀬皓太": "消防副士長", "阿部将幸": "消防司令"}, "alias": {"菊地祐樹": "菊地裕樹"}, "duties": [{"mo": 4, "d": "1", "w": "水", "u": {"蓮田1": {"c": "山口秀夫", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": null, "m": ["岡田浩弥", "蔵品拓"], "k": "神屋敷駿也"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "1", "w": "", "u": {"蓮田1": {"c": "山口秀夫", "m": ["鍵山大地", "岡田浩弥"], "k": "吉田昌太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "渡邉拓也"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "3", "w": "金", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": [], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": ["巣瀬皓太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "3(夜～）", "w": "", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": [], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "5", "w": "日", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["岡田浩弥"], "k": "巣瀬皓太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "菊地祐樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 4, "d": "5(夜～）", "w": "", "u": {"蓮田1": {"c": "小川勝也", "m": ["中嶋雅人", "岡田浩弥"], "k": "巣瀬皓太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "菊地祐樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 4, "d": "7", "w": "火", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太", "蔵品拓"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "菊地祐樹"}, "救助1": {"c": "飯野勝大", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "7（夜）", "w": "", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太", "蔵品拓"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "9", "w": "木", "u": {"蓮田1": {"c": "小川勝也", "m": ["福本洋樹"], "k": "柳田光星"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "11", "w": "土", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "巣瀬皓太"}, "蓮田2": {"c": "渡邉拓也", "m": ["福本洋樹"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "13", "w": "月", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "吉田昌太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "巣瀬皓太"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 4, "d": "15", "w": "水", "u": {"蓮田1": {"c": "小川勝也", "m": ["鍵山大地"], "k": "巣瀬皓太"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "17", "w": "金", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["福本洋樹", "鍵山大地"], "k": "柳田光星"}, "蓮田2": {"c": "渡邉拓也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "17", "w": "金", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["福本洋樹"], "k": "柳田光星"}, "蓮田2": {"c": "渡邉拓也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "19", "w": "日", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "齋藤英雄", "m": ["福本洋樹"], "k": "柳田光星"}, "救助1": {"c": "落合祐輔", "m": ["飯野勝大"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "21", "w": "火", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "吉田昌太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["小島佑太"], "k": "渡邉大和"}, "救助1": {"c": "落合祐輔", "m": [], "k": "巣瀬皓太"}}}, {"mo": 4, "d": "21(夜)", "w": "", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "吉田昌太"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "神屋敷駿也"}, "救助1": {"c": "落合祐輔", "m": [], "k": "巣瀬皓太"}}}, {"mo": 4, "d": "23", "w": "木", "u": {"蓮田1": {"c": "渡邉拓也", "m": ["小島佑太"], "k": "渡邉大和"}, "蓮田2": {"c": "齋藤英雄", "m": ["蔵品拓"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "23(夜)", "w": "", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "渡邉大和"}, "蓮田2": {"c": "渡邉拓也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "25", "w": "土", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "小川勝也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "27", "w": "月", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["福本洋樹"], "k": "巣瀬皓太"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 4, "d": "29", "w": "水", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "1", "w": "金", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": ["巣瀬皓太"], "k": "吉田昌太"}}}, {"mo": 5, "d": "3", "w": "日", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "柳田光星"}, "蓮田2": {"c": "渡邉拓也", "m": [], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "5", "w": "火", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "柳田光星"}, "救助1": {"c": "落合祐輔", "m": ["巣瀬皓太"], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "7", "w": "木", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太"], "k": "巣瀬皓太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["福本洋樹", "蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "7（夜）", "w": "", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太"], "k": "巣瀬皓太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "9", "w": "土", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "渡邉大和"}, "蓮田2": {"c": "渡邉拓也", "m": ["小島佑太"], "k": "巣瀬皓太"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "9（夜）", "w": "", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": ["吉田昌太", "巣瀬皓太"], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "11", "w": "月", "u": {"蓮田1": {"c": "小川勝也", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "吉田昌太"}}}, {"mo": 5, "d": "13", "w": "水", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "巣瀬皓太"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "15", "w": "金", "u": {"蓮田1": {"c": "小川勝也", "m": ["福本洋樹", "蔵品拓"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "15（夜）", "w": "", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "17", "w": "日", "u": {"蓮田1": {"c": "小川勝也", "m": ["吉田昌太"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "19", "w": "火", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["福本洋樹"], "k": "吉田昌太"}, "蓮田2": {"c": "渡邉拓也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "21", "w": "木", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "巣瀬皓太"}, "蓮田2": {"c": "渡邉拓也", "m": ["鍵山大地"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "23", "w": "土", "u": {"蓮田1": {"c": "齋藤英雄", "m": ["福本洋樹"], "k": "吉田昌太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "巣瀬皓太"}}}, {"mo": 5, "d": "23(夜)", "w": "", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "吉田昌太"}, "蓮田2": {"c": "小川勝也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "巣瀬皓太"}}}, {"mo": 5, "d": "25", "w": "月", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "巣瀬皓太"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "渡邉拓也"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "27", "w": "水", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "吉田昌太"}, "蓮田2": {"c": "小川勝也", "m": ["蔵品拓"], "k": "渡邉大和"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "29", "w": "金", "u": {"蓮田1": {"c": "山口秀夫", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["神屋敷駿也"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "29", "w": "金", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["佐々木瞭維"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "巣瀬皓太"}}}, {"mo": 5, "d": "29", "w": "金", "u": {"蓮田1": {"c": "山口秀夫", "m": ["鍵山大地"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["齋藤英雄"], "k": "神屋敷駿也"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 5, "d": "29", "w": "金", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["佐々木瞭維"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "巣瀬皓太"}}}, {"mo": 5, "d": "31", "w": "日", "u": {"蓮田1": {"c": "齋藤英雄", "m": ["中嶋雅人"], "k": "巣瀬皓太"}, "蓮田2": {"c": "小川勝也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 5, "d": "31", "w": "日", "u": {"蓮田1": {"c": "小川勝也", "m": ["巣瀬皓太"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 6, "d": "2", "w": "火", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "吉田昌太"}, "蓮田2": {"c": "渡邉拓也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": ["巣瀬皓太"], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "4", "w": "木", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["鍵山大地", "蔵品拓"], "k": "吉田昌太"}, "蓮田2": {"c": "渡邉拓也", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "4（夜）", "w": "木", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "吉田昌太"}, "蓮田2": {"c": "渡邉拓也", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "6", "w": "土", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "柳田光星"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "8", "w": "月", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "巣瀬皓太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["蔵品拓"], "k": "吉田昌太"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 6, "d": "8", "w": "月", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太"], "k": "吉田昌太"}, "蓮田2": {"c": "中嶋雅人", "m": ["蔵品拓"], "k": "神屋敷駿也"}, "救助1": {"c": "落合祐輔", "m": ["飯野勝大"], "k": "巣瀬皓太"}}}, {"mo": 6, "d": "10", "w": "水", "u": {"蓮田1": {"c": "小川勝也", "m": ["巣瀬皓太"], "k": "渡邉拓也"}, "蓮田2": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "12", "w": "金", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "吉田昌太"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "14", "w": "日", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["鍵山大地"], "k": "柳田光星"}, "蓮田2": {"c": "神屋敷駿也", "m": ["小島佑太"], "k": "渡邉拓也"}, "救助1": {"c": "落合祐輔", "m": ["巣瀬皓太"], "k": "飯野勝大"}}}, {"mo": 6, "d": "16", "w": "火", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": ["巣瀬皓太"], "k": "吉田昌太"}}}, {"mo": 6, "d": "16（夜）", "w": "火", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "巣瀬皓太"}}}, {"mo": 6, "d": "18", "w": "木", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["小島佑太"], "k": "巣瀬皓太"}, "蓮田2": {"c": "渡邉拓也", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "飯野勝大", "m": [], "k": "吉田昌太"}}}, {"mo": 6, "d": "20", "w": "土", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "吉田昌太"}, "蓮田2": {"c": "渡邉拓也", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "20（夜）", "w": "土", "u": {"蓮田1": {"c": "小川勝也", "m": ["蔵品拓"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": ["吉田昌太"], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "22", "w": "月", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["鍵山大地"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": [], "k": "巣瀬皓太"}}}, {"mo": 6, "d": "24", "w": "水", "u": {"蓮田1": {"c": "小川勝也", "m": ["小島佑太"], "k": "神屋敷駿也"}, "蓮田2": {"c": "中嶋雅人", "m": ["蔵品拓"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "飯野勝大"}}}, {"mo": 6, "d": "26", "w": "金", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["蔵品拓"], "k": "巣瀬皓太"}, "蓮田2": {"c": "渡邉拓也", "m": ["鍵山大地"], "k": "吉田昌太"}, "救助1": {"c": "飯野勝大", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "28", "w": "日", "u": {"蓮田1": {"c": "神屋敷駿也", "m": ["吉田昌太"], "k": "柳田光星"}, "蓮田2": {"c": "渡邉拓也", "m": ["福本洋樹"], "k": "菊地裕樹"}, "救助1": {"c": "落合祐輔", "m": [], "k": "佐々木瞭維"}}}, {"mo": 6, "d": "30", "w": "火", "u": {"蓮田1": {"c": "中嶋雅人", "m": ["福本洋樹"], "k": "渡邉拓也"}, "蓮田2": {"c": "神屋敷駿也", "m": ["小島佑太"], "k": "柳田光星"}, "救助1": {"c": "飯野勝大", "m": ["佐々木瞭維"], "k": "巣瀬皓太"}}}]};
+const NAMES = Object.keys(DATA.rank);
+const UNIT_HOME={"落合祐輔": "救助隊", "飯野勝大": "救助隊", "佐々木瞭維": "救助隊", "吉田昌太": "救助隊", "巣瀬皓太": "救助隊", "小川勝也": "消防隊", "中嶋雅人": "消防隊", "神屋敷駿也": "消防隊", "渡邉拓也": "消防隊", "菊地裕樹": "消防隊", "福本洋樹": "消防隊", "小島佑太": "消防隊", "鍵山大地": "消防隊", "蔵品拓": "消防隊", "岡田浩弥": "消防隊", "金子直樹": "救急隊", "大越正和": "救急隊", "佐藤勇人": "救急隊", "森久大悟": "救急隊", "山田光太": "救急隊", "土渕高広": "救急隊", "橋本和明": "救急隊", "川口千聡": "救急隊", "山口澪音": "救急隊", "山口秀夫": "指令", "萩原秀長": "指令", "齋藤英雄": "指令", "森田光": "指令", "柳田光星": "指令", "渡邉大和": "指令", "阿部将幸": "指令"};
+const KIKAN_DEFAULT=["落合祐輔", "飯野勝大", "佐々木瞭維", "巣瀬皓太", "小川勝也", "中嶋雅人", "神屋敷駿也", "渡邉拓也", "菊地裕樹", "金子直樹", "大越正和", "佐藤勇人", "森久大悟", "山田光太", "土渕高広", "橋本和明", "川口千聡", "山口澪音", "山口秀夫", "齋藤英雄", "森田光", "柳田光星", "渡邉大和"];
+const BOAT_DEFAULT=["飯野勝大"];
+
+const C = { ink:"#15181d", panel:"#1e232b", panel2:"#262c36", line:"#39404c",
+  orange:"#ff6a2b", amber:"#ffb02e", green:"#7ec97f", red:"#ff5252",
+  text:"#ece8de", dim:"#9aa3b0", blue:"#6fb7ff", teal:"#4fd1c5" };
+
+const RANKPT = { "消防士":1,"消防副士長":2,"消防士長":3,"消防司令補":4,"消防司令":5,"消防司令長":6 };
+const rankOf = (n)=>DATA.rank[DATA.alias[n]||n]||"不明";
+const rankPt = (n)=>RANKPT[rankOf(n)]||0;
+const APPA_ORDER = { "蓮田1":0,"蓮田2":1,"救助1":2 };
+const canEnter = (m)=> m.rankN>=2 && m.rankN<=4;
+
+const WD=["日","月","火","水","木","金","土"];
+function fmtDuty(mo,dStr){ const day=parseInt(String(dStr),10); if(!day) return `${mo}/${dStr}`; const dt=new Date(2026,mo-1,day); return `${mo}/${day}（${WD[dt.getDay()]}）`; }
+
+const SYSTEMS = [
+  { id:"entry", name:"屋内進入体系", sub:"火災・建物内進入", color:C.orange, status:"稼働中" },
+  { id:"water", name:"水難初動体制", sub:"水難・河川救助", color:C.blue, status:"稼働中" },
+  { id:"rope",  name:"ロープレスキュー体制", sub:"高所・低所・斜面", color:C.teal, status:"準備中" },
+];
+
+// ===== 資格初期値 =====
+function defaultQuals(){ const q={}; NAMES.forEach((n)=>{ q[n]={kikan:KIKAN_DEFAULT.includes(n), boat:BOAT_DEFAULT.includes(n), license:"中型"}; }); return q; }
+const licenseOK = (lic,need)=> need==="大型" ? lic==="大型" : (lic==="大型"||lic==="中型");
+
+/* ========== 屋内進入モジュール ========== */
+const ENTRY_ROLE = { shiki:{label:"指揮者",color:C.orange}, door:{label:"ドアコン",color:C.amber}, r1:{label:"R1",color:C.red}, r2:{label:"R2",color:C.blue}, denrei:{label:"伝令",color:C.green} };
+const ENTRY_ORDER = ["shiki","door","r1","r2","denrei"];
+function buildPool(units){
+  const pool=[]; let id=0;
+  const add=(name,appa,slot,unit)=>{ if(!name) return; pool.push({id:id++,name,appa,slot,unit,leader:slot==="隊長",rank:rankOf(name),rankN:rankPt(name)}); };
+  for(const appa of ["蓮田1","蓮田2"]){ const u=units[appa]; if(!u) continue; add(u.c,appa,"隊長","消防隊"); (u.m||[]).forEach((n)=>add(n,appa,"隊員","消防隊")); }
+  const r=units["救助1"]; if(r){ add(r.c,"救助1","隊長","救助隊"); (r.m||[]).forEach((n)=>add(n,"救助1","隊員","救助隊")); add(r.k,"救助1","機関員","救助隊"); }
+  return pool;
+}
+function assignR1(pool){
+  const used=new Set(); const take=(m)=>{if(m)used.add(m.id);return m;}; const free=(a)=>a.filter((m)=>!used.has(m.id));
+  const byRank=(a,b)=>b.rankN-a.rankN||APPA_ORDER[a.appa]-APPA_ORDER[b.appa];
+  const roles={}; const rescueAll=pool.filter((m)=>m.unit==="救助隊"); const rc=rescueAll.length;
+  const rescueLeader=pool.find((m)=>m.unit==="救助隊"&&m.leader);
+  const fireLeaders=pool.filter((m)=>m.unit==="消防隊"&&m.leader).sort(byRank);
+  let s,sr,sw;
+  if(fireLeaders.length){s=fireLeaders[0];sr="① 消防係の小隊長（"+s.appa+"隊長）";}
+  else{const f4=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=4).sort(byRank); if(f4.length){s=f4[0];sr="② 消防係 司令補以上";}else if(rescueLeader){s=rescueLeader;sr="③ 救助係の小隊長";}else{s=free(pool).sort(byRank)[0];sr="該当者なし→代替";sw="指揮者の要件該当者なし";}}
+  take(s); roles.shiki={member:s,reason:sr,warn:sw};
+  let d,dr,dw;
+  if(rc>=3){if(rescueLeader&&!used.has(rescueLeader.id)){d=rescueLeader;dr="① 救助隊3名以上 → 救助小隊長";}else{d=free(rescueAll).sort(byRank)[0];dr="救助隊3名以上 → 階級上位の救助隊員";dw="救助小隊長が乗車していません";}}
+  else if(rc===2){let c=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3&&!m.leader).sort(byRank); if(c.length){d=c[0];dr="① 救助隊2名 → 消防係（士長以上）";}else{c=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3).sort(byRank); if(c.length){d=c[0];dr="消防小隊長が担当（他に士長以上なし）";dw="指揮者と消防小隊長が重複";}else{d=free(pool).sort(byRank)[0];dr="該当者なし→代替";dw="ドアコン該当者なし";}}}
+  else{d=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3).sort(byRank)[0]||free(pool).sort(byRank)[0];dr="救助隊2名未満 → 消防係から";dw="救助隊が規定人数（2名）未満";}
+  take(d); roles.door={member:d,reason:dr,warn:dw};
+  let entry=free(rescueAll).filter(canEnter); let mixed=false;
+  if(entry.length<2){mixed=true; entry=entry.concat(free(pool).filter((m)=>m.unit==="消防隊"&&canEnter(m)));}
+  entry=entry.sort(byRank).slice(0,2);
+  const r1=entry[0],r2=entry[1]; take(r1); take(r2);
+  roles.r1={member:r1,reason:mixed?"混合編成 → 階級上位":"① 救助隊・階級上位",warn:r1?null:"R1該当者なし（副士長〜司令補が不在）"};
+  roles.r2={member:r2,reason:mixed?"混合編成 → 階級上位":"① 救助隊（ドアコン・R1以外）",warn:r2?null:"R2該当者なし（副士長〜司令補が不在）"};
+  const rest=free(pool).sort(byRank); take(rest[0]); roles.denrei={member:rest[0],reason:"残員より",warn:rest[0]?null:"伝令該当者なし"};
+  return {roles,rc,benched:free(pool)};
+}
+function assignR2(pool, entryExclude){
+  entryExclude=entryExclude||new Set();
+  const used=new Set(); const take=(m)=>{if(m)used.add(m.id);return m;}; const free=(a)=>a.filter((m)=>!used.has(m.id));
+  const byRank=(a,b)=>b.rankN-a.rankN||APPA_ORDER[a.appa]-APPA_ORDER[b.appa];
+  const roles={}; const rescueAll=pool.filter((m)=>m.unit==="救助隊");
+  const rescueLeader=pool.find((m)=>m.unit==="救助隊"&&m.leader);
+  const fire=pool.filter((m)=>m.unit==="消防隊"); const fireEntry=()=>free(fire).filter((m)=>!entryExclude.has(m.id));
+  let s,sr,sw; const shorei=free(pool).filter((m)=>m.rankN===5).sort(byRank);
+  if(shorei.length){s=shorei[0];sr="① 消防司令";}else if(rescueLeader){s=rescueLeader;sr="② 救助小隊長";}else{s=free(pool).sort(byRank)[0];sr="該当者なし→代替";sw="指揮者の要件該当者なし";}
+  take(s); roles.shiki={member:s,reason:sr,warn:sw};
+  let d,dr,dw; if(rescueLeader&&!used.has(rescueLeader.id)){d=rescueLeader;dr="① 救助小隊長";}else{const oth=free(rescueAll).sort(byRank);if(oth.length){d=oth[0];dr="② 救助小隊長以外の救助隊";}else{d=free(pool).sort(byRank)[0];dr="該当者なし→代替";dw="ドアコン該当者なし（救助隊不足）";}}
+  take(d); roles.door={member:d,reason:dr,warn:dw};
+  let r1,r1r,r1w; const c=fireEntry().filter((m)=>m.rankN>=3&&m.rankN<=4).sort(byRank);
+  if(c.length){r1=c[0];r1r="① 消防士長以上";}else{r1w="R1該当者なし（消防士長〜司令補が不在）";}
+  if(r1) take(r1); roles.r1={member:r1,reason:r1r,warn:r1w};
+  let r2,r2r,r2w; if(r1){const below=fireEntry().filter((m)=>m.rankN>=2&&m.rankN<=r1.rankN).sort(byRank); if(below.length){r2=below[0];r2r="① R1と同階級以下";}else{r2w="R2該当者なし（R1と同階級以下の消防隊員が不在）";}}else{r2w="R1未定のため算出不可";}
+  if(r2) take(r2); roles.r2={member:r2,reason:r2r,warn:r2w};
+  const rest=free(pool).sort(byRank); take(rest[0]); roles.denrei={member:rest[0],reason:"条件なし（残員より）",warn:rest[0]?null:"伝令該当者なし"};
+  return {roles,rc:rescueAll.length,benched:free(pool)};
+}
+function RoleCard({meta,data,prevMember}){
+  const m=data.member; const repeat=prevMember&&m&&prevMember.name===m.name;
+  return (
+    <div className="rounded-lg p-3" style={{background:C.panel,border:`1px solid ${data.warn?C.red:C.line}`}}>
+      <div className="flex items-center justify-between mb-2"><span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:meta.color}}>{meta.label}</span>{repeat&&<span style={{fontSize:9,color:C.dim}}>継続</span>}</div>
+      {m?(<><div className="px-2 py-1.5 rounded-sm flex items-center justify-between mb-1.5" style={{background:"linear-gradient(180deg,#f2eee4,#ddd6c6)",color:"#1a1d22",borderLeft:`5px solid ${meta.color}`,fontWeight:800}}><span style={{fontSize:14}}>{m.name}</span><span style={{fontSize:10,color:"#5a5346"}}>{m.rank}</span></div>
+        <div style={{fontSize:10,color:C.dim}}>{m.appa} {m.slot}{m.leader?"・小隊長":""}</div><div style={{fontSize:10,color:meta.color,marginTop:2}}>▸ {data.reason}</div></>):<div style={{fontSize:12,color:C.red}}>該当者なし</div>}
+      {data.warn&&<div style={{fontSize:10,color:C.red,marginTop:4}}>✕ {data.warn}</div>}
+    </div>
+  );
+}
+function EntryView({units}){
+  const pool=useMemo(()=>buildPool(units),[units]);
+  const round1=useMemo(()=>assignR1(pool),[pool]);
+  const round2=useMemo(()=>{const ex=new Set([round1.roles.r1.member?.id,round1.roles.r2.member?.id].filter((x)=>x!=null)); return assignR2(pool,ex);},[pool,round1]);
+  return (<>
+    <div><div className="flex items-center gap-2 mb-2"><span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.orange}}>1回目進入</span><span style={{fontSize:10,color:C.dim}}>{round1.rc>=3?"救助小隊長がドアコン":round1.rc===2?"消防係がドアコン":"救助隊規定未満"}</span></div>
+      <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))"}}>{ENTRY_ORDER.map((rk)=><RoleCard key={rk} meta={ENTRY_ROLE[rk]} data={round1.roles[rk]} />)}</div>
+      {round1.benched.length>0&&<div style={{fontSize:11,color:C.dim,marginTop:6}}>待機: {round1.benched.map((m)=>m.name).join("、")}</div>}</div>
+    <div><div className="flex items-center gap-2 mb-2"><span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.blue}}>2回目進入（ローテーション）</span><span style={{fontSize:10,color:C.dim}}>救助隊→指揮・ドア／消防隊→R1R2</span></div>
+      <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))"}}>{ENTRY_ORDER.map((rk)=><RoleCard key={rk} meta={ENTRY_ROLE[rk]} data={round2.roles[rk]} prevMember={round1.roles[rk].member} />)}</div>
+      {round2.benched.length>0&&<div style={{fontSize:11,color:C.dim,marginTop:6}}>待機: {round2.benched.map((m)=>m.name).join("、")}</div>}</div>
+    <p style={{fontSize:11,color:C.dim}}>※「▸」は適用ルール、「継続」は1回目と同一人物、赤枠は要件不足。R1・R2は副士長〜司令補。最終人選は指揮者の判断によります。</p>
+  </>);
+}
+
+/* ========== 水難初動体制モジュール ========== */
+const CAR_LICENSE = { "蓮田1":"大型", "蓮田2":"中型", "救助1":"中型" };
+const HOME_PRI = { "消防隊":0, "救助隊":1, "救急隊":2, "指令":3 };
+function assembleWater(units, quals){
+  const warnings=[]; const cars={};
+  ["蓮田1","蓮田2","救助1"].forEach((car)=>{
+    const u=units[car]||{}; const crew=[];
+    if(u.c) crew.push({name:u.c,role:"隊長",car});
+    (u.m||[]).forEach((n)=>crew.push({name:n,role:"隊員",car}));
+    if(u.k) crew.push({name:u.k,role:"機関員",car});
+    cars[car]={crew,origEngineer:u.k||null,count:crew.length,pulled:[]};
+  });
+  // 機材1候補：蓮田1・蓮田2の全乗員（機関員含む。救助1は対象外）
+  const cand=[];
+  ["蓮田1","蓮田2"].forEach((car)=>{ cars[car].crew.forEach((p)=>{ cand.push({...p,q:quals[p.name]||{},rankN:rankPt(p.name),home:UNIT_HOME[p.name]||"指令"}); }); });
+  let kizai=null;
+  const boatCands=cand.filter((p)=>p.q.boat).sort((a,b)=>(HOME_PRI[a.home]-HOME_PRI[b.home])||(b.rankN-a.rankN));
+  if(boatCands.length===0){ warnings.push("ボート免許保持者が当日いません → 蓮田機材1は組成不可（ボート要員不在）"); }
+  else{
+    const p1=boatCands[0]; const remaining=cand.filter((p)=>p.name!==p1.name);
+    let p2,driver,driverNote;
+    if(p1.q.kikan){ p2=remaining.slice().sort((a,b)=>((a.q.kikan?1:0)-(b.q.kikan?1:0))||(a.rankN-b.rankN))[0]; driver=p1; driverNote="1人目（ボート）が機関員兼務"; }
+    else{ const certs=remaining.filter((p)=>p.q.kikan).sort((a,b)=>a.rankN-b.rankN);
+      if(certs.length){ p2=certs[0]; driver=p2; driverNote="2人目が機関員（1人目は認定なし）"; }
+      else{ p2=remaining.slice().sort((a,b)=>a.rankN-b.rankN)[0]; driver=null; warnings.push("蓮田機材1に機関員（運転者）がいません"); } }
+    if(!p2) warnings.push("蓮田機材1の2人目を確保できません（候補不足）");
+    if(driver&&!licenseOK(driver.q.license,"中型")) warnings.push(`蓮田機材1運転者 ${driver.name}：中型免許なし`);
+    [p1,p2].filter(Boolean).forEach((p)=>{ cars[p.car].pulled.push(p.name); });
+    kizai={p1,p2,driver,driverNote};
+  }
+  // 引き抜き後：元車両を再編成（運転者は残員から再指定）し検証
+  ["蓮田1","蓮田2","救助1"].forEach((car)=>{
+    const cc=cars[car];
+    cc.remain=cc.crew.filter((p)=>!cc.pulled.includes(p.name));
+    const need=CAR_LICENSE[car];
+    let eng=cc.origEngineer;
+    if(eng && cc.pulled.includes(eng)){ // 元機関員が機材1へ → 残員から再指定（認定＋免許優先）
+      const re=cc.remain.map((p)=>({name:p.name,q:quals[p.name]||{}}))
+        .filter((p)=>p.q.kikan)
+        .sort((a,b)=>((licenseOK(b.q.license,need)?1:0)-(licenseOK(a.q.license,need)?1:0))||(rankPt(b.name)-rankPt(a.name)));
+      eng=re.length?re[0].name:null; cc.reEngineer=!!eng;
+    }
+    cc.engineer=eng;
+    if(cc.remain.length<2) warnings.push(`${car}が再編成後 ${cc.remain.length}名（2名未満）`);
+    if(!eng){ warnings.push(`${car}に機関員（認定保持者）がいません`); }
+    else{ const q=quals[eng]||{}; if(!q.kikan) warnings.push(`${car}機関員 ${eng}：機関員認定なし`); if(!licenseOK(q.license,need)) warnings.push(`${car}機関員 ${eng}：${need}免許なし`); }
+  });
+  return {cars,kizai,warnings};
+}
+function QualBadge({q}){ if(!q) return null; return (
+  <span style={{fontSize:9,color:C.dim}}>{q.kikan?"機":"　"} {q.boat?"舟":"　"} {q.license||"—"}</span>
+); }
+function WaterView({units, quals, openQual}){
+  const res=useMemo(()=>assembleWater(units,quals),[units,quals]);
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.blue}}>水難 車両編成</span>
+        <button onClick={openQual} style={{fontSize:11,color:C.dim,background:C.panel2,border:`1px solid ${C.line}`,borderRadius:6,padding:"4px 10px",cursor:"pointer"}}>資格登録</button>
+      </div>
+      {res.warnings.length>0&&(
+        <div className="rounded-lg p-3" style={{background:"#3a3320",border:`1px solid ${C.amber}`}}>
+          {res.warnings.map((w,i)=><div key={i} style={{fontSize:12,color:C.amber}}>⚠ {w}</div>)}
+        </div>
+      )}
+      <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))"}}>
+        {["蓮田1","蓮田2","救助1"].map((car)=>{
+          const cc=res.cars[car];
+          return (
+            <div key={car} className="rounded-lg p-3" style={{background:C.panel,border:`1px solid ${C.line}`}}>
+              <div className="flex items-center justify-between mb-1"><span style={{fontWeight:700,fontSize:13,color:car==="救助1"?C.amber:C.text}}>{car}</span><span style={{fontSize:9,color:C.dim}}>運転:{CAR_LICENSE[car]}免許</span></div>
+              {cc.crew.map((p,i)=>{ const pulled=cc.pulled.includes(p.name); const q=quals[p.name]; const isEng=cc.engineer===p.name;
+                return (<div key={i} className="flex items-center justify-between" style={{fontSize:12,padding:"2px 0",opacity:pulled?0.4:1}}>
+                  <span style={{textDecoration:pulled?"line-through":"none"}}><span style={{color:C.dim,fontSize:10}}>{p.role==="機関員"?"機":p.role==="隊長"?"長":"員"} </span>{p.name} <span style={{color:C.dim,fontSize:9}}>{rankOf(p.name)}</span>{isEng&&!pulled&&<span style={{fontSize:9,color:C.blue}}>{cc.reEngineer?" 運転(再指定)":" 運転"}</span>}</span>
+                  {pulled?<span style={{fontSize:9,color:C.blue}}>→機材1</span>:<QualBadge q={q} />}
+                </div>); })}
+              {cc.remain.length<2&&<div style={{fontSize:10,color:C.amber,marginTop:2}}>⚠ 再編成後{cc.remain.length}名</div>}
+            </div>
+          );
+        })}
+      </div>
+      {/* 蓮田機材1 */}
+      <div className="rounded-lg p-3" style={{background:C.panel,border:`2px solid ${C.blue}`}}>
+        <div style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.blue,marginBottom:6}}>蓮田機材1（ボート積載車）</div>
+        {res.kizai?(
+          <div className="grid gap-2" style={{gridTemplateColumns:"1fr 1fr"}}>
+            {[["1人目（ボート）",res.kizai.p1],["2人目",res.kizai.p2]].map(([lbl,p],i)=>(
+              <div key={i} className="rounded p-2" style={{background:C.panel2,border:`1px solid ${C.line}`}}>
+                <div style={{fontSize:10,color:C.dim}}>{lbl}</div>
+                {p?(<><div style={{fontWeight:700,fontSize:14}}>{p.name} <span style={{fontSize:10,color:C.dim}}>{rankOf(p.name)}</span></div>
+                  <div style={{fontSize:10,color:C.dim}}>{p.home}・{p.car}より{res.kizai.driver&&res.kizai.driver.name===p.name?"・運転":""}</div></>):<div style={{fontSize:12,color:C.red}}>確保できず</div>}
+              </div>
+            ))}
+            <div style={{gridColumn:"1 / -1",fontSize:11,color:res.kizai.driver?C.dim:C.red,marginTop:2}}>
+              {res.kizai.driver?`運転：${res.kizai.driver.name}（${res.kizai.driverNote}）`:"運転者なし（機関員不在）"}
+            </div>
+          </div>
+        ):<div style={{fontSize:12,color:C.red}}>組成不可（ボート要員不在）</div>}
+      </div>
+      <p style={{fontSize:11,color:C.dim}}>※ 機材1は別車両。蓮田1・蓮田2から2名を引き抜き、元車両は名前を削除して再編成（元機関員が抜けた場合は残員から運転者を再指定）。同一車両内では機関員・隊長・隊員を兼務可。救助1は引き抜き対象外。水際の役割分担は今後追加します。</p>
+    </>
+  );
+}
+
+/* ========== 共通UI ========== */
+function Picker({value,onChange}){
+  return (<select value={value||""} onChange={(e)=>onChange(e.target.value||null)} style={{background:C.panel2,border:`1px solid ${C.line}`,color:value?C.text:C.dim,borderRadius:4,padding:"2px 4px",fontSize:12,maxWidth:110}}><option value="">—</option>{NAMES.map((n)=><option key={n} value={n}>{n}</option>)}</select>);
+}
+
+function App(){
+  const [view,setView]=useState("home");
+  const months=[...new Set(DATA.duties.map((x)=>x.mo))];
+  const [mo,setMo]=useState(months[months.length-1]);
+  const list=DATA.duties.filter((x)=>x.mo===mo);
+  const [idx,setIdx]=useState(0);
+  const duty=list[Math.min(idx,list.length-1)];
+  const key=`${duty.mo}-${duty.d}`;
+
+  const [overrides,setOverrides]=useState({});
+  const [quals,setQuals]=useState(()=>defaultQuals());
+  const [showQual,setShowQual]=useState(false);
+
+  useEffect(()=>{ (async()=>{
+    try{ const r=await window.storage.get("duty_overrides"); if(r&&r.value) setOverrides(JSON.parse(r.value)); }catch(e){}
+    try{ const q=await window.storage.get("quals"); const base=defaultQuals(); if(q&&q.value){ const st=JSON.parse(q.value); Object.keys(st).forEach((n)=>{ if(base[n]) base[n]={...base[n],...st[n]}; }); } setQuals(base); }catch(e){}
+  })(); },[]);
+  const persist=(k,v)=>{ try{ window.storage.set(k,JSON.stringify(v)); }catch(e){} };
+
+  const edited=!!overrides[key];
+  const units=edited?overrides[key]:duty.u;
+  const setUnits=(u)=>{ const next={...overrides,[key]:u}; setOverrides(next); persist("duty_overrides",next); };
+  const editField=(appa,field,value,mi)=>{ const u=JSON.parse(JSON.stringify(units)); if(field==="m"){u[appa].m=u[appa].m||[];u[appa].m[mi]=value;u[appa].m=u[appa].m.filter(Boolean);}else u[appa][field]=value; setUnits(u); };
+  const addMember=(appa)=>{const u=JSON.parse(JSON.stringify(units));u[appa].m=[...(u[appa].m||[]),NAMES[0]];setUnits(u);};
+  const removeMember=(appa,mi)=>{const u=JSON.parse(JSON.stringify(units));u[appa].m=(u[appa].m||[]).filter((_,i)=>i!==mi);setUnits(u);};
+  const resetDay=()=>{const next={...overrides};delete next[key];setOverrides(next);persist("duty_overrides",next);};
+  const setQual=(name,field,value)=>{ const next={...quals,[name]:{...quals[name],[field]:value}}; setQuals(next); persist("quals",next); };
+
+  const inS={background:C.panel2,border:`1px solid ${C.line}`,color:C.text,borderRadius:6,padding:"6px 10px",fontSize:13};
+  const sys=SYSTEMS.find((s)=>s.id===view);
+
+  return (
+    <div style={{background:C.ink,minHeight:"100vh",color:C.text,fontFamily:"'BIZ UDGothic','Hiragino Kaku Gothic ProN',sans-serif"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;900&display=swap'); *:focus-visible{outline:2px solid ${C.amber};outline-offset:2px;}`}</style>
+
+      <header className="px-5 pt-5 pb-3" style={{borderBottom:`2px solid ${C.orange}`}}>
+        <button onClick={()=>setView("home")} style={{background:"none",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
+          <div style={{fontSize:11,letterSpacing:"0.3em",color:C.orange,fontWeight:700}}>蓮田市消防本部 第２救助係</div>
+          <div style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:22,color:C.text,marginTop:2}}>出動体制ポータル</div>
+        </button>
+        {view!=="home"&&(<div className="flex gap-1 mt-3 flex-wrap">
+          <button onClick={()=>setView("home")} style={{background:C.panel2,color:C.dim,border:`1px solid ${C.line}`,borderRadius:6,padding:"5px 12px",fontSize:12,cursor:"pointer"}}>← 一覧</button>
+          {SYSTEMS.map((s)=>(<button key={s.id} onClick={()=>setView(s.id)} style={{background:view===s.id?s.color:C.panel2,color:view===s.id?"#1a0d05":C.dim,border:`1px solid ${view===s.id?s.color:C.line}`,borderRadius:6,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{s.name}</button>))}
+        </div>)}
+      </header>
+
+      <main className="p-4 flex flex-col gap-4" style={{maxWidth:1040,margin:"0 auto"}}>
+        {view==="home"?(<>
+          <p style={{color:C.dim,fontSize:13,marginTop:2}}>当直日を選ぶと、各出動体制の編成を自動で算出します。災害割・階級・資格は全体制で共通です。</p>
+          <div className="grid gap-3" style={{gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))"}}>
+            {SYSTEMS.map((s)=>(<button key={s.id} onClick={()=>setView(s.id)} className="rounded-xl p-5 text-left" style={{background:C.panel,border:`1px solid ${C.line}`,borderTop:`4px solid ${s.color}`,cursor:"pointer"}}>
+              <div className="flex items-center justify-between"><span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:18,color:s.color}}>{s.name}</span><span style={{fontSize:10,color:s.status==="稼働中"?C.green:C.dim,border:`1px solid ${s.status==="稼働中"?C.green:C.line}`,borderRadius:999,padding:"2px 8px"}}>{s.status}</span></div>
+              <div style={{fontSize:12,color:C.dim,marginTop:8}}>{s.sub}</div></button>))}
+          </div>
+        </>):(<>
+          <section className="rounded-lg p-4 flex flex-wrap items-center gap-3" style={{background:C.panel,border:`1px solid ${C.line}`}}>
+            <div className="flex gap-1">{months.map((m)=>(<button key={m} onClick={()=>{setMo(m);setIdx(0);}} style={{background:mo===m?C.orange:C.panel2,color:mo===m?"#1a0d05":C.dim,border:`1px solid ${mo===m?C.orange:C.line}`,borderRadius:6,padding:"6px 14px",fontWeight:700,fontSize:13,cursor:"pointer"}}>{m}月</button>))}</div>
+            <select value={idx} onChange={(e)=>setIdx(Number(e.target.value))} style={inS}>{list.map((x,i)=><option key={i} value={i}>{fmtDuty(x.mo,x.d)}{overrides[`${x.mo}-${x.d}`]?" ✎":""}</option>)}</select>
+            {edited&&<button onClick={resetDay} style={{marginLeft:"auto",fontSize:11,color:C.dim,background:C.panel2,border:`1px solid ${C.line}`,borderRadius:6,padding:"4px 10px",cursor:"pointer"}}>この日をリセット</button>}
+          </section>
+
+          <section className="rounded-lg p-4" style={{background:C.panel2,border:`1px solid ${edited?C.amber:C.line}`}}>
+            <h2 style={{fontSize:12,color:C.dim,letterSpacing:"0.08em",marginBottom:8}}>当日の災害割（編集可・全体制で共通）{edited&&<span style={{color:C.amber}}> ・編集済み</span>}</h2>
+            <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))"}}>
+              {["蓮田1","蓮田2","救助1"].map((appa)=>{ const u=units[appa]||{c:null,m:[],k:null}; const isR=appa==="救助1";
+                return (<div key={appa} className="rounded p-2" style={{background:C.panel,border:`1px solid ${C.line}`}}>
+                  <div style={{fontWeight:700,fontSize:13,color:isR?C.amber:C.text,marginBottom:4}}>{appa}</div>
+                  <div className="flex items-center gap-2 mb-1" style={{fontSize:11}}><span style={{color:C.dim,width:42}}>隊長</span><Picker value={u.c} onChange={(v)=>editField(appa,"c",v)} /></div>
+                  {(u.m||[]).map((nm,mi)=>(<div key={mi} className="flex items-center gap-2 mb-1" style={{fontSize:11}}><span style={{color:C.dim,width:42}}>隊員</span><Picker value={nm} onChange={(v)=>editField(appa,"m",v,mi)} /><button onClick={()=>removeMember(appa,mi)} style={{color:C.dim,background:"none",border:"none",cursor:"pointer"}}>×</button></div>))}
+                  <button onClick={()=>addMember(appa)} style={{fontSize:10,color:C.dim,background:"none",border:`1px dashed ${C.line}`,borderRadius:4,padding:"1px 6px",cursor:"pointer",marginBottom:4}}>+ 隊員</button>
+                  <div className="flex items-center gap-2" style={{fontSize:11,opacity:isR?1:0.55}}><span style={{color:C.dim,width:42}}>機関員</span><Picker value={u.k} onChange={(v)=>editField(appa,"k",v)} /></div>
+                </div>); })}
+            </div>
+          </section>
+
+          {showQual&&(
+            <section className="rounded-lg p-4" style={{background:C.panel2,border:`1px solid ${C.line}`}}>
+              <div className="flex items-center justify-between mb-2"><h2 style={{fontSize:12,color:C.dim}}>資格登録（機関員認定・ボート免許・免許区分）</h2><button onClick={()=>setShowQual(false)} style={{fontSize:11,color:C.dim,background:"none",border:"none",cursor:"pointer"}}>閉じる ×</button></div>
+              <div style={{maxHeight:320,overflowY:"auto"}}>
+                {NAMES.map((n)=>{ const q=quals[n]||{}; return (
+                  <div key={n} className="flex items-center gap-3 flex-wrap" style={{fontSize:12,padding:"4px 0",borderTop:`1px solid ${C.line}`}}>
+                    <span style={{width:120}}>{n} <span style={{fontSize:9,color:C.dim}}>{rankOf(n)}・{UNIT_HOME[n]||""}</span></span>
+                    <label className="flex items-center gap-1" style={{cursor:"pointer",color:q.kikan?C.text:C.dim}}><input type="checkbox" checked={!!q.kikan} onChange={(e)=>setQual(n,"kikan",e.target.checked)} />機関員認定</label>
+                    <label className="flex items-center gap-1" style={{cursor:"pointer",color:q.boat?C.text:C.dim}}><input type="checkbox" checked={!!q.boat} onChange={(e)=>setQual(n,"boat",e.target.checked)} />ボート</label>
+                    <select value={q.license||"中型"} onChange={(e)=>setQual(n,"license",e.target.value)} style={{background:C.panel,border:`1px solid ${C.line}`,color:C.text,borderRadius:4,padding:"2px 4px",fontSize:11}}><option>大型</option><option>中型</option><option>なし</option></select>
+                  </div>); })}
+              </div>
+            </section>
+          )}
+
+          {view==="entry" ? <EntryView units={units} /> : view==="water" ? <WaterView units={units} quals={quals} openQual={()=>setShowQual(true)} /> : (
+            <div className="rounded-lg p-5" style={{background:C.panel,border:`1px dashed ${sys.color}`}}>
+              <div style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:18,color:sys.color}}>{sys.name}</div>
+              <p style={{fontSize:13,color:C.dim,marginTop:8,lineHeight:1.7}}>この体制はまだ役割選定ルールが未設定です。役割と選定条件を教えていただければ組み込みます。</p>
+            </div>
+          )}
+        </>)}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
