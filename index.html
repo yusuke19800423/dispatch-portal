@@ -172,7 +172,96 @@ function RoleCard({meta,data,prevMember}){
     </div>
   );
 }
-function EntryView({units}){
+function EntryView({units, dutyKey}){
+  const pool=useMemo(()=>buildPool(units),[units]);
+  const round1Auto=useMemo(()=>assignR1(pool),[pool]);
+  const round2Auto=useMemo(()=>{const ex=new Set([round1Auto.roles.r1.member?.id,round1Auto.roles.r2.member?.id].filter((x)=>x!=null)); return assignR2(pool,ex);},[pool,round1Auto]);
+  const [overEntry, setOverEntry]=useState({});
+  const [editKey, setEditKey]=useState(null);
+  useEffect(()=>{ setOverEntry({}); },[dutyKey]);
+  const applyOver=(roles, prefix)=>{
+    const result={};
+    ENTRY_ORDER.forEach((rk)=>{
+      const ok=`${prefix}-${rk}`;
+      if(overEntry[ok]){ const m=pool.find((p)=>p.name===overEntry[ok]); result[rk]={...roles[rk], member:m||roles[rk].member, manual:true}; }
+      else { result[rk]={...roles[rk]}; }
+    });
+    return result;
+  };
+  const round1={...round1Auto, roles:applyOver(round1Auto.roles,"r1")};
+  const round2Base=useMemo(()=>{const ex=new Set([round1.roles.r1.member?.id,round1.roles.r2.member?.id].filter((x)=>x!=null)); return assignR2(pool,ex);},[pool,round1.roles]);
+  const round2={...round2Base, roles:applyOver(round2Base.roles,"r2")};
+  const setManual=(prefix,rk,name)=>{
+    setOverEntry((prev)=>name?{...prev,[`${prefix}-${rk}`]:name}:(()=>{const n={...prev};delete n[`${prefix}-${rk}`];return n;})());
+    setEditKey(null);
+  };
+  const resetAll=()=>setOverEntry({});
+  const hasManual=Object.keys(overEntry).length>0;
+  const EditableRoleCard=({rk,data,prevMember,prefix})=>{
+    const meta=ENTRY_ROLE[rk]; const m=data.member;
+    const repeat=prevMember&&m&&prevMember.name===m.name;
+    const isEdit=editKey===`${prefix}-${rk}`;
+    return (
+      <div className="rounded-lg p-3" style={{background:C.panel,border:`1px solid ${data.warn?C.red:data.manual?C.amber:C.line}`}}>
+        <div className="flex items-center justify-between mb-2">
+          <span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:meta.color}}>{meta.label}</span>
+          <div className="flex gap-1">
+            {data.manual&&<span style={{fontSize:9,color:C.amber}}>手動</span>}
+            {repeat&&<span style={{fontSize:9,color:C.dim}}>継続</span>}
+            <button onClick={()=>setEditKey(isEdit?null:`${prefix}-${rk}`)}
+              style={{fontSize:10,color:C.dim,background:C.panel2,border:`1px solid ${C.line}`,borderRadius:4,padding:"1px 6px",cursor:"pointer"}}>
+              {isEdit?"✕":"変更"}
+            </button>
+          </div>
+        </div>
+        {isEdit&&(
+          <div className="mb-2">
+            <select onChange={(e)=>setManual(prefix,rk,e.target.value||null)} defaultValue={m?.name||""}
+              style={{width:"100%",background:C.panel2,border:`1px solid ${C.amber}`,color:C.text,borderRadius:4,padding:"4px 6px",fontSize:12}}>
+              <option value="">自動（{m?.name||"なし"}）</option>
+              {pool.map((p)=><option key={p.id} value={p.name}>{p.name}（{p.rank}・{p.appa}）</option>)}
+            </select>
+          </div>
+        )}
+        {m?(<>
+          <div className="px-2 py-1.5 rounded-sm flex items-center justify-between mb-1.5"
+            style={{background:"linear-gradient(180deg,#f2eee4,#ddd6c6)",color:"#1a1d22",borderLeft:`5px solid ${meta.color}`,fontWeight:800}}>
+            <span style={{fontSize:14}}>{m.name}</span><span style={{fontSize:10,color:"#5a5346"}}>{m.rank}</span>
+          </div>
+          <div style={{fontSize:10,color:C.dim}}>{m.appa} {m.slot}{m.leader?"・小隊長":""}</div>
+          <div style={{fontSize:10,color:data.manual?C.amber:meta.color,marginTop:2}}>▸ {data.manual?"手動指定":data.reason}</div>
+        </>):<div style={{fontSize:12,color:C.red}}>該当者なし</div>}
+        {data.warn&&<div style={{fontSize:10,color:C.red,marginTop:4}}>✕ {data.warn}</div>}
+      </div>
+    );
+  };
+  return (<>
+    <div>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.orange}}>1回目進入</span>
+          <span style={{fontSize:10,color:C.dim}}>{round1Auto.rc>=3?"救助小隊長がドアコン":round1Auto.rc===2?"消防係がドアコン":"救助隊規定未満"}</span>
+        </div>
+        {hasManual&&<button onClick={resetAll} style={{fontSize:11,color:C.dim,background:C.panel2,border:`1px solid ${C.line}`,borderRadius:6,padding:"3px 8px",cursor:"pointer"}}>手動編集をリセット</button>}
+      </div>
+      <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))"}}>
+        {ENTRY_ORDER.map((rk)=><EditableRoleCard key={rk} rk={rk} data={round1.roles[rk]} prefix="r1" />)}
+      </div>
+      {round1Auto.benched.length>0&&<div style={{fontSize:11,color:C.dim,marginTop:6}}>待機: {round1Auto.benched.map((m)=>m.name).join("、")}</div>}
+    </div>
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.blue}}>2回目進入（ローテーション）</span>
+        <span style={{fontSize:10,color:C.dim}}>救助隊→指揮・ドア／消防隊→R1R2</span>
+      </div>
+      <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))"}}>
+        {ENTRY_ORDER.map((rk)=><EditableRoleCard key={rk} rk={rk} data={round2.roles[rk]} prefix="r2" prevMember={round1.roles[rk].member} />)}
+      </div>
+      {round2.benched.length>0&&<div style={{fontSize:11,color:C.dim,marginTop:6}}>待機: {round2.benched.map((m)=>m.name).join("、")}</div>}
+    </div>
+    <p style={{fontSize:11,color:C.dim}}>※ 各役の「変更」で手動指定可（橙枠・手動表示）。「手動編集をリセット」で自動に戻ります。赤枠は要件不足。最終人選は指揮者の判断によります。</p>
+  </>);
+}){
   const pool=useMemo(()=>buildPool(units),[units]);
   const round1=useMemo(()=>assignR1(pool),[pool]);
   const round2=useMemo(()=>{const ex=new Set([round1.roles.r1.member?.id,round1.roles.r2.member?.id].filter((x)=>x!=null)); return assignR2(pool,ex);},[pool,round1]);
@@ -414,7 +503,7 @@ function App(){
             </section>
           )}
 
-          {view==="entry" ? <EntryView units={units} /> : view==="water" ? <WaterView units={units} quals={quals} openQual={()=>setShowQual(true)} /> : (
+          {view==="entry" ? <EntryView units={units} dutyKey={key} /> : view==="water" ? <WaterView units={units} quals={quals} openQual={()=>setShowQual(true)} /> : (
             <div className="rounded-lg p-5" style={{background:C.panel,border:`1px dashed ${sys.color}`}}>
               <div style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:18,color:sys.color}}>{sys.name}</div>
               <p style={{fontSize:13,color:C.dim,marginTop:8,lineHeight:1.7}}>この体制はまだ役割選定ルールが未設定です。役割と選定条件を教えていただければ組み込みます。</p>
