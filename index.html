@@ -284,26 +284,48 @@ function assembleWater(units,quals){
   const byOrigLeader=(a,b)=>(b.leader?1:0)-(a.leader?1:0);
   const total=pool.length;
 
-  // ===== 0. 機材1のボート免許者を最優先で1名確保 =====
-  // 3台×2名=6名を確保できる人数が残るかで、機材1を2名運用にできるか判定
+  // ===== 0. 機材1のボート免許者を最優先で1名確保（ただし元の車の機関員確保を妨げない） =====
   const boatAll=pool.filter((p)=>p.q.boat).sort((a,b)=>(HOME_PRI[a.home]-HOME_PRI[b.home])||(b.rankN-a.rankN));
   let kizaiP1=null,kizaiTarget=0; // kizaiTarget: 機材1に充てる人数の目標（0/1/2）
   if(boatAll.length>0){
-    kizaiP1=boatAll[0];
-    // ボート免許者を1名確保した上で、残り人数で3台×2名=6名を満たせるか
+    // 各候補について、抜いた後も元の車に機関員資格者（その車の必要免許＋認定を満たす人）が残るかを確認
+    const checkOk=(cand)=>{
+      const carName=cand.origCar;
+      const need=CAR_LICENSE[carName];
+      const sameCar=pool.filter((p)=>p.origCar===carName&&p.name!==cand.name&&!used.has(p.name));
+      return sameCar.some((p)=>p.q.kikan&&licenseOK(p.q.license,need));
+    };
+    let chosen=boatAll.find((p)=>checkOk(p));
+    if(!chosen){
+      // 抜くと機関員が枯れてしまう車しかボート免許者がいない場合：
+      // その車に機関員資格者を1名先にキープしてからボート免許者を機材1へ出す
+      chosen=boatAll[0];
+      const carName=chosen.origCar;
+      const need=CAR_LICENSE[carName];
+      const keepCand=pool.filter((p)=>p.origCar===carName&&p.name!==chosen.name&&!used.has(p.name)&&p.q.kikan&&licenseOK(p.q.license,need))[0];
+      if(!keepCand){
+        // 同じ車に機関員資格者がいない場合、他車から1名キープを確保（編成上は車間移動になる）
+        warnings.push(carName+"：ボート免許者（"+chosen.name+"）を機材1に出すと機関員資格者が不在になります");
+      }
+    }
+    kizaiP1=chosen;
     kizaiTarget = (total-1)>=6 ? 2 : 1; // 2名分の余裕があれば2名、なければ1名運用
     take(kizaiP1);
   } else {
     warnings.push("蓮田機材1：ボート免許保持者がいないため組成不可");
   }
 
-  // ===== 1. 救助1：元乗員（特に小隊長）を最大限残し2名に調整 =====
+  // ===== 1. 救助1：元乗員（特に小隊長）を最大限残し2名に調整（補充は機関員資格者を優先） =====
+  const rescueNeed=CAR_LICENSE["救助1"];
   const rescueOrig=free().filter((p)=>p.origCar==="救助1").sort(byOrigLeader);
   let rescueTeam=[];
   if(rescueOrig.length>=2){ rescueTeam=rescueOrig.slice(0,2); }
   else if(rescueOrig.length===1){
     rescueTeam=[rescueOrig[0]];
-    const filler=free().filter((p)=>p.origCar!=="救助1").sort((a,b)=>b.rankN-a.rankN)[0];
+    const cands=free().filter((p)=>p.origCar!=="救助1");
+    const withKikan=cands.filter((p)=>p.q.kikan&&licenseOK(p.q.license,rescueNeed)).sort((a,b)=>b.rankN-a.rankN);
+    const others=cands.filter((p)=>!(p.q.kikan&&licenseOK(p.q.license,rescueNeed))).sort((a,b)=>b.rankN-a.rankN);
+    const filler=(withKikan.concat(others))[0];
     if(filler) rescueTeam.push(filler);
   } else {
     rescueTeam=free().sort((a,b)=>b.rankN-a.rankN).slice(0,2);
@@ -312,13 +334,18 @@ function assembleWater(units,quals){
   rescueTeam.forEach(take);
   if(rescueTeam.length<2) warnings.push("救助1の乗員が"+rescueTeam.length+"名しか確保できません");
 
-  // ===== 2. 蓮田1・蓮田2：残りから2名×2台を確保（元乗員優先） =====
+  // ===== 2. 蓮田1・蓮田2：残りから2名×2台を確保（元乗員優先、機関員資格者は車側に残す） =====
   function fillCar(car){
+    const need=CAR_LICENSE[car];
     const orig=free().filter((p)=>p.origCar===car).sort(byOrigLeader);
     let team=orig.slice(0,2);
     if(team.length<2){
-      const need=2-team.length;
-      const fillers=free().filter((p)=>!team.includes(p)).sort((a,b)=>b.rankN-a.rankN).slice(0,need);
+      const more=2-team.length;
+      // 補充は「機関員資格あり」を優先し、車に機関員を確保できるようにする
+      const candidates=free().filter((p)=>!team.includes(p));
+      const withKikan=candidates.filter((p)=>p.q.kikan&&licenseOK(p.q.license,need)).sort((a,b)=>b.rankN-a.rankN);
+      const others=candidates.filter((p)=>!(p.q.kikan&&licenseOK(p.q.license,need))).sort((a,b)=>b.rankN-a.rankN);
+      const fillers=withKikan.concat(others).slice(0,more);
       team=team.concat(fillers);
     }
     team.forEach(take);
