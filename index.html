@@ -312,17 +312,36 @@ function App(){
   useEffect(()=>{
     (async()=>{
       try{ const r=await window.storage.get("duty_overrides"); if(r&&r.value) setOverrides(JSON.parse(r.value)); }catch(e){}
-      try{ const q=await window.storage.get("quals"); const base=defaultQuals(); if(q&&q.value){ const st=JSON.parse(q.value); Object.keys(st).forEach((n)=>{ if(base[n]) base[n]={...base[n],...st[n]}; }); } setQuals(base); }catch(e){}
+      try{
+        const q=await window.storage.get("quals");
+        if(q&&q.value){
+          const saved=JSON.parse(q.value);
+          const base=defaultQuals();
+          Object.keys(saved).forEach((n)=>{ if(base[n]) base[n]={...base[n],...saved[n]}; });
+          setQuals(base);
+          console.log("資格情報を読み込みました");
+        }
+      }catch(e){ console.warn("quals load error:",e); }
     })();
     const handler=(e)=>{
       const {key,value}=e.detail;
       if(key==="duty_overrides"){ try{ setOverrides(JSON.parse(value)); }catch(err){} }
-      if(key==="quals"){ try{ const st=JSON.parse(value); const base=defaultQuals(); Object.keys(st).forEach((n)=>{ if(base[n]) base[n]={...base[n],...st[n]}; }); setQuals(base); }catch(err){} }
+      if(key==="quals"){ try{
+        const saved=JSON.parse(value);
+        const base=defaultQuals();
+        Object.keys(saved).forEach((n)=>{ if(base[n]) base[n]={...base[n],...saved[n]}; });
+        setQuals(base);
+        console.log("資格情報をリアルタイム同期しました");
+      }catch(err){ console.warn("quals sync error:",err); } }
     };
     window.addEventListener("firebase-sync",handler);
     return ()=>window.removeEventListener("firebase-sync",handler);
   },[]);
-  const persist=(k,v)=>{ try{ window.storage.set(k,JSON.stringify(v)); }catch(e){} };
+  const persist=async(k,v)=>{
+    try{
+      await window.storage.set(k,JSON.stringify(v));
+    }catch(e){ console.error("保存エラー:",k,e); alert("保存に失敗しました。ネットワークを確認してください。"); }
+  };
 
   const edited=!!overrides[key];
   const units=edited?overrides[key]:duty.u;
