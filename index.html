@@ -350,10 +350,13 @@ function assembleWater(units,quals){
   let kizai=null;
   if(kizaiP1){
     if(kizaiTarget>=2){
-      const rest=free().sort((a,b)=>{
+      const restAll=free();
+      const fireNoKikan=restAll.filter((p)=>p.home==="消防隊"&&!p.q.kikan).sort((a,b)=>a.rankN-b.rankN);
+      const others=restAll.filter((p)=>!(p.home==="消防隊"&&!p.q.kikan)).sort((a,b)=>{
         const aOk=a.q.kikan?1:0, bOk=b.q.kikan?1:0;
-        return aOk-bOk || a.rankN-b.rankN; // 機関員資格なし・低階級を優先（資格者は車に残す前提）
+        return aOk-bOk || a.rankN-b.rankN;
       });
+      const rest=fireNoKikan.concat(others);
       const p2=rest[0]||null;
       let driver=kizaiP1.q.kikan&&licenseOK(kizaiP1.q.license,"中型")?kizaiP1:null;
       let driverNote=driver?"1人目（ボート）が機関員兼務":null;
