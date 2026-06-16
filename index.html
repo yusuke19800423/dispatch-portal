@@ -267,45 +267,109 @@ const CAR_LICENSE={"蓮田1":"大型","蓮田2":"中型","救助1":"中型"};
 const HOME_PRI={"消防隊":0,"救助隊":1,"救急隊":2,"指令":3};
 
 function assembleWater(units,quals){
-  const warnings=[];const cars={};
+  const warnings=[];
+  // 全乗員をプール化（出身車両と元役割を記録）
+  const pool=[];
   ["蓮田1","蓮田2","救助1"].forEach((car)=>{
-    const u=units[car]||{};const crew=[];
-    if(u.c)crew.push({name:u.c,role:"隊長",car});
-    (u.m||[]).forEach((n)=>crew.push({name:n,role:"隊員",car}));
-    if(u.k)crew.push({name:u.k,role:"機関員",car});
-    cars[car]={crew,origEngineer:u.k||null,count:crew.length,pulled:[]};
+    const u=units[car]||{};
+    if(u.c)pool.push({name:u.c,origRole:"隊長",origCar:car,leader:true});
+    (u.m||[]).forEach((n)=>pool.push({name:n,origRole:"隊員",origCar:car,leader:false}));
+    if(u.k)pool.push({name:u.k,origRole:"機関員",origCar:car,leader:false});
   });
-  const cand=[];
-  ["蓮田1","蓮田2"].forEach((car)=>{cars[car].crew.forEach((p)=>{cand.push({...p,q:quals[p.name]||{},rankN:rankPt(p.name),home:UNIT_HOME[p.name]||"指令"});});});
-  let kizai=null;
-  const boatCands=cand.filter((p)=>p.q.boat).sort((a,b)=>(HOME_PRI[a.home]-HOME_PRI[b.home])||(b.rankN-a.rankN));
-  if(boatCands.length===0){warnings.push("ボート免許保持者が当日いません → 蓮田機材1は組成不可");}
-  else{
-    const p1=boatCands[0];const remaining=cand.filter((p)=>p.name!==p1.name);
-    let p2,driver,driverNote;
-    if(p1.q.kikan){p2=remaining.slice().sort((a,b)=>((a.q.kikan?1:0)-(b.q.kikan?1:0))||(a.rankN-b.rankN))[0];driver=p1;driverNote="1人目（ボート）が機関員兼務";}
-    else{const certs=remaining.filter((p)=>p.q.kikan).sort((a,b)=>a.rankN-b.rankN);
-      if(certs.length){p2=certs[0];driver=p2;driverNote="2人目が機関員（1人目は認定なし）";}
-      else{p2=remaining.slice().sort((a,b)=>a.rankN-b.rankN)[0];driver=null;warnings.push("蓮田機材1に機関員（運転者）がいません");}}
-    if(!p2)warnings.push("蓮田機材1の2人目を確保できません");
-    if(driver&&!licenseOK(driver.q.license,"中型"))warnings.push("蓮田機材1運転者 "+driver.name+"：中型免許なし");
-    [p1,p2].filter(Boolean).forEach((p)=>{cars[p.car].pulled.push(p.name);});
-    kizai={p1,p2,driver,driverNote};
+  pool.forEach((p)=>{ p.q=quals[p.name]||{}; p.rankN=rankPt(p.name); p.home=UNIT_HOME[p.name]||"指令"; });
+
+  const used=new Set();
+  const take=(p)=>{ if(p) used.add(p.name); return p; };
+  const free=()=>pool.filter((p)=>!used.has(p.name));
+  const byOrigLeader=(a,b)=>(b.leader?1:0)-(a.leader?1:0);
+  const total=pool.length;
+
+  // ===== 0. 機材1のボート免許者を最優先で1名確保 =====
+  // 3台×2名=6名を確保できる人数が残るかで、機材1を2名運用にできるか判定
+  const boatAll=pool.filter((p)=>p.q.boat).sort((a,b)=>(HOME_PRI[a.home]-HOME_PRI[b.home])||(b.rankN-a.rankN));
+  let kizaiP1=null,kizaiTarget=0; // kizaiTarget: 機材1に充てる人数の目標（0/1/2）
+  if(boatAll.length>0){
+    kizaiP1=boatAll[0];
+    // ボート免許者を1名確保した上で、残り人数で3台×2名=6名を満たせるか
+    kizaiTarget = (total-1)>=6 ? 2 : 1; // 2名分の余裕があれば2名、なければ1名運用
+    take(kizaiP1);
+  } else {
+    warnings.push("蓮田機材1：ボート免許保持者がいないため組成不可");
   }
-  ["蓮田1","蓮田2","救助1"].forEach((car)=>{
-    const cc=cars[car];cc.remain=cc.crew.filter((p)=>!cc.pulled.includes(p.name));
-    const need=CAR_LICENSE[car];let eng=cc.origEngineer;
-    if(eng&&cc.pulled.includes(eng)){
-      const re=cc.remain.map((p)=>({name:p.name,q:quals[p.name]||{}})).filter((p)=>p.q.kikan)
-        .sort((a,b)=>((licenseOK(b.q.license,need)?1:0)-(licenseOK(a.q.license,need)?1:0))||(rankPt(b.name)-rankPt(a.name)));
-      eng=re.length?re[0].name:null;cc.reEngineer=!!eng;
+
+  // ===== 1. 救助1：元乗員（特に小隊長）を最大限残し2名に調整 =====
+  const rescueOrig=free().filter((p)=>p.origCar==="救助1").sort(byOrigLeader);
+  let rescueTeam=[];
+  if(rescueOrig.length>=2){ rescueTeam=rescueOrig.slice(0,2); }
+  else if(rescueOrig.length===1){
+    rescueTeam=[rescueOrig[0]];
+    const filler=free().filter((p)=>p.origCar!=="救助1").sort((a,b)=>b.rankN-a.rankN)[0];
+    if(filler) rescueTeam.push(filler);
+  } else {
+    rescueTeam=free().sort((a,b)=>b.rankN-a.rankN).slice(0,2);
+    if(rescueOrig.length===0) warnings.push("救助1の元乗員が確保できず、他車から補充しています");
+  }
+  rescueTeam.forEach(take);
+  if(rescueTeam.length<2) warnings.push("救助1の乗員が"+rescueTeam.length+"名しか確保できません");
+
+  // ===== 2. 蓮田1・蓮田2：残りから2名×2台を確保（元乗員優先） =====
+  function fillCar(car){
+    const orig=free().filter((p)=>p.origCar===car).sort(byOrigLeader);
+    let team=orig.slice(0,2);
+    if(team.length<2){
+      const need=2-team.length;
+      const fillers=free().filter((p)=>!team.includes(p)).sort((a,b)=>b.rankN-a.rankN).slice(0,need);
+      team=team.concat(fillers);
     }
-    cc.engineer=eng;
-    if(cc.remain.length<2)warnings.push(car+"が再編成後 "+cc.remain.length+"名（2名未満）");
-    if(!eng){warnings.push(car+"に機関員（認定保持者）がいません");}
-    else{const q=quals[eng]||{};if(!q.kikan)warnings.push(car+"機関員 "+eng+"：機関員認定なし");if(!licenseOK(q.license,need))warnings.push(car+"機関員 "+eng+"："+need+"免許なし");}
+    team.forEach(take);
+    return team;
+  }
+  const car1Team=fillCar("蓮田1");
+  const car2Team=fillCar("蓮田2");
+  if(car1Team.length<2) warnings.push("蓮田1の乗員が"+car1Team.length+"名しか確保できません");
+  if(car2Team.length<2) warnings.push("蓮田2の乗員が"+car2Team.length+"名しか確保できません");
+
+  const teams={"蓮田1":car1Team,"蓮田2":car2Team,"救助1":rescueTeam};
+
+  // ===== 3. 各車の機関員（運転者）を選定 =====
+  const cars={};
+  ["蓮田1","蓮田2","救助1"].forEach((car)=>{
+    const team=teams[car];
+    const need=CAR_LICENSE[car];
+    const certified=team.filter((p)=>p.q.kikan&&licenseOK(p.q.license,need));
+    let engineer=null;
+    if(certified.length){
+      const wasEngineer=certified.find((p)=>p.origCar===car&&p.origRole==="機関員");
+      engineer=wasEngineer||certified.sort((a,b)=>b.rankN-a.rankN)[0];
+    }
+    cars[car]={team,engineer:engineer?engineer.name:null};
+    if(!engineer) warnings.push(car+"：機関員認定・"+need+"免許を満たす乗員がいません");
   });
-  return {cars,kizai,warnings};
+
+  // ===== 4. 蓮田機材1：確保済みのボート免許者(1人目)に、目標人数に応じて2人目を付ける =====
+  let kizai=null;
+  if(kizaiP1){
+    if(kizaiTarget>=2){
+      const rest=free().sort((a,b)=>{
+        const aOk=a.q.kikan?1:0, bOk=b.q.kikan?1:0;
+        return aOk-bOk || a.rankN-b.rankN; // 機関員資格なし・低階級を優先（資格者は車に残す前提）
+      });
+      const p2=rest[0]||null;
+      let driver=kizaiP1.q.kikan&&licenseOK(kizaiP1.q.license,"中型")?kizaiP1:null;
+      let driverNote=driver?"1人目（ボート）が機関員兼務":null;
+      if(!driver&&p2&&p2.q.kikan&&licenseOK(p2.q.license,"中型")){ driver=p2; driverNote="2人目が機関員（1人目は要件未達）"; }
+      if(p2) take(p2);
+      if(!driver) warnings.push("蓮田機材1：機関員（中型免許＋認定）を満たす乗員がいません");
+      kizai={p1:kizaiP1,p2,driver,driverNote,single:false};
+    } else {
+      // 1名運用（人員不足のため3台確保を優先し、機材1は縮小）
+      const driver=(kizaiP1.q.kikan&&licenseOK(kizaiP1.q.license,"中型"))?kizaiP1:null;
+      kizai={p1:kizaiP1,p2:null,driver,driverNote:"1名ケージ運用（人員不足のため3台優先）",single:true};
+      if(!driver) warnings.push("蓮田機材1（1名）：機関員要件未達のまま運用");
+    }
+  }
+
+  return {cars,kizai,warnings,benched:free()};
 }
 
 function QualBadge({q}){if(!q)return null;return(<span style={{fontSize:9,color:C.dim}}>{q.kikan?"機":"　"} {q.boat?"舟":"　"} {q.license||"—"}</span>);}
@@ -326,22 +390,23 @@ function WaterView({units,quals,openQual}){
       {["蓮田1","蓮田2","救助1"].map((car)=>{
         const cc=res.cars[car];
         return (
-          <div key={car} className="rounded-lg p-3" style={{background:C.panel,border:"1px solid "+C.line}}>
+          <div key={car} className="rounded-lg p-3" style={{background:C.panel,border:"1px solid "+(cc.team.length<2?C.red:C.line)}}>
             <div className="flex items-center justify-between mb-1">
               <span style={{fontWeight:700,fontSize:13,color:car==="救助1"?C.amber:C.text}}>{car}</span>
               <span style={{fontSize:9,color:C.dim}}>{"運転:"+CAR_LICENSE[car]+"免許"}</span>
             </div>
-            {cc.crew.map((p,i)=>{const pulled=cc.pulled.includes(p.name);const q=quals[p.name];const isEng=cc.engineer===p.name;
-              return (<div key={i} className="flex items-center justify-between" style={{fontSize:12,padding:"2px 0",opacity:pulled?0.4:1}}>
-                <span style={{textDecoration:pulled?"line-through":"none"}}>
-                  <span style={{color:C.dim,fontSize:10}}>{p.role==="機関員"?"機":p.role==="隊長"?"長":"員"}{" "}</span>
+            {cc.team.map((p,i)=>{const q=quals[p.name];const isEng=cc.engineer===p.name;
+              const moved=p.origCar!==car;
+              return (<div key={i} className="flex items-center justify-between" style={{fontSize:12,padding:"2px 0"}}>
+                <span>
                   {p.name}{" "}<span style={{color:C.dim,fontSize:9}}>{rankOf(p.name)}</span>
-                  {isEng&&!pulled&&<span style={{fontSize:9,color:C.blue}}>{cc.reEngineer?" 運転(再指定)":" 運転"}</span>}
+                  {isEng&&<span style={{fontSize:9,color:C.blue}}>{" 運転"}</span>}
+                  {moved&&<span style={{fontSize:9,color:C.amber}}>{"（"+p.origCar+"より）"}</span>}
                 </span>
-                {pulled?<span style={{fontSize:9,color:C.blue}}>→機材1</span>:<QualBadge q={q} />}
+                <QualBadge q={q} />
               </div>);
             })}
-            {cc.remain.length<2&&<div style={{fontSize:10,color:C.amber,marginTop:2}}>{"⚠ 再編成後"+cc.remain.length+"名"}</div>}
+            {cc.team.length<2&&<div style={{fontSize:10,color:C.red,marginTop:2}}>{"⚠ "+cc.team.length+"名のみ"}</div>}
           </div>
         );
       })}
@@ -349,12 +414,24 @@ function WaterView({units,quals,openQual}){
     <div className="rounded-lg p-3" style={{background:C.panel,border:"2px solid "+C.blue}}>
       <div style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.blue,marginBottom:6}}>蓮田機材1（ボート積載車）</div>
       {res.kizai?(
+        res.kizai.single?(
+          <div>
+            <div className="rounded p-2" style={{background:C.panel2,border:"1px solid "+C.amber}}>
+              <div style={{fontSize:10,color:C.amber}}>1名ケージ運用</div>
+              <div style={{fontWeight:700,fontSize:14}}>{res.kizai.p1.name}{" "}<span style={{fontSize:10,color:C.dim}}>{rankOf(res.kizai.p1.name)}</span></div>
+              <div style={{fontSize:10,color:C.dim}}>{res.kizai.p1.origCar+"より・ボート免許"}</div>
+            </div>
+            <div style={{fontSize:11,color:res.kizai.driver?C.dim:C.red,marginTop:6}}>
+              {res.kizai.driver?"運転兼務（機関員要件を満たす）":"⚠ 機関員要件未達のまま運用"}
+            </div>
+          </div>
+        ):(
         <div className="grid gap-2" style={{gridTemplateColumns:"1fr 1fr"}}>
           {[["1人目（ボート）",res.kizai.p1],["2人目",res.kizai.p2]].map(([lbl,p],i)=>(
             <div key={i} className="rounded p-2" style={{background:C.panel2,border:"1px solid "+C.line}}>
               <div style={{fontSize:10,color:C.dim}}>{lbl}</div>
               {p?(<><div style={{fontWeight:700,fontSize:14}}>{p.name}{" "}<span style={{fontSize:10,color:C.dim}}>{rankOf(p.name)}</span></div>
-                <div style={{fontSize:10,color:C.dim}}>{p.home+"・"+p.car+"より"+(res.kizai.driver&&res.kizai.driver.name===p.name?"・運転":"")}</div></>)
+                <div style={{fontSize:10,color:C.dim}}>{p.origCar+"より"+(res.kizai.driver&&res.kizai.driver.name===p.name?"・運転":"")}</div></>)
               :<div style={{fontSize:12,color:C.red}}>確保できず</div>}
             </div>
           ))}
@@ -362,9 +439,10 @@ function WaterView({units,quals,openQual}){
             {res.kizai.driver?"運転："+res.kizai.driver.name+"（"+res.kizai.driverNote+"）":"運転者なし（機関員不在）"}
           </div>
         </div>
+        )
       ):<div style={{fontSize:12,color:C.red}}>組成不可（ボート要員不在）</div>}
     </div>
-    <p style={{fontSize:11,color:C.dim}}>機材1は別車両。蓮田1・蓮田2から引き抜き後、元車両を再編成。救助1は引き抜き対象外。水際役割分担は今後追加。</p>
+    <p style={{fontSize:11,color:C.dim}}>蓮田1・蓮田2・救助1は各2名を優先確保（救助1は元乗員を最大限維持）。残員から蓮田機材1を組成（ボート免許者が1名のみの場合は1名ケージ運用）。水際役割分担は今後追加。</p>
   </>);
 }
 
