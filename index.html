@@ -96,44 +96,58 @@ function assignR1(pool){
   const used=new Set();const take=(m)=>{if(m)used.add(m.id);return m;};const free=(a)=>a.filter((m)=>!used.has(m.id));
   const byRank=(a,b)=>b.rankN-a.rankN||APPA_ORDER[a.appa]-APPA_ORDER[b.appa];
   const roles={};const rescueAll=pool.filter((m)=>m.unit==="救助隊");const rc=rescueAll.length;
-  const rescueLeader=pool.find((m)=>m.unit==="救助隊"&&m.leader);
+  const rescueCand=rescueAll.filter((m)=>canEnter(m)).sort(byRank);
 
-  // ===== 1. R1・R2を救助隊で先確保 =====
-  let entry=free(rescueAll).filter((m)=>canEnter(m));let mixed=false;
-  if(entry.length<2){mixed=true;entry=entry.concat(free(pool).filter((m)=>m.unit==="消防隊"&&canEnter(m)));}
-  entry=entry.sort(byRank).slice(0,2);
-  if(entry.length>=2&&!entry.some((m)=>m.rankN>=3)){
-    const fs=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3&&canEnter(m)).sort(byRank);
-    if(fs.length){entry=[entry[0],fs[0]].sort(byRank);mixed=true;}
+  // ===== 1. 救助隊員を階級順にドアコン→R1→R2へ割り当て =====
+  let d,dr,dw,r1,r1r,r1w,r2,r2r,r2w;
+  if(rescueCand.length>=3){
+    // 3名以上：上から順にドアコン・R1・R2
+    d=rescueCand[0];dr="① 救助隊・階級最上位";
+    r1=rescueCand[1];r1r="① 救助隊・階級2位";
+    r2=rescueCand[2];r2r="① 救助隊・階級3位";
+  } else if(rescueCand.length===2){
+    // 2名：R1・R2に救助隊、ドアコンは消防隊から
+    r1=rescueCand[0];r1r="① 救助隊・階級上位";
+    r2=rescueCand[1];r2r="① 救助隊・階級下位";
+    const fireSenior=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3).sort(byRank);
+    d=fireSenior[0]||free(pool).sort(byRank)[0];
+    dr="救助隊2名 → 消防係（士長以上）";
+    if(!fireSenior.length)dw="ドアコン該当者なし（士長以上の消防隊員が不在）";
+  } else if(rescueCand.length===1){
+    // 1名：R1に救助隊、ドアコン・R2は消防隊から
+    r1=rescueCand[0];r1r="① 救助隊";
+    const fireEntry=free(pool).filter((m)=>m.unit==="消防隊"&&canEnter(m)).sort(byRank);
+    d=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3).sort(byRank)[0];
+    dr="救助隊1名 → 消防係（士長以上）";
+    r2=fireEntry.find((m)=>m!==d);r2r="消防隊から";
+    if(!d)dw="ドアコン該当者なし";
+    if(!r2)r2w="R2該当者なし";
+  } else {
+    // 0名：全員消防隊から混合
+    const fireEntry=free(pool).filter((m)=>canEnter(m)).sort(byRank);
+    d=free(pool).filter((m)=>m.rankN>=3).sort(byRank)[0];dr="救助隊不在 → 消防係から";dw="救助隊員がいません";
+    r1=fireEntry[0];r1r="混合編成";r1w="救助隊員不在";
+    r2=fireEntry[1];r2r="混合編成";r2w="救助隊員不在";
   }
-  const r1=entry[0],r2=entry[1];const pairOk=entry.some((m)=>m&&m.rankN>=3);
-  take(r1);take(r2);
-  roles.r1={member:r1,reason:mixed?"混合編成 → 階級上位":"① 救助隊・階級上位",warn:r1?(pairOk?null:"⚠ ペアに士長以上がいません"):"R1該当者なし"};
-  roles.r2={member:r2,reason:mixed?"混合編成 → 士長以上のバディ":"① 救助隊・階級下位",warn:r2?(pairOk?null:"⚠ ペアに士長以上がいません"):"R2該当者なし"};
+  // R1・R2のペアに士長以上が1名以上いるか確認
+  const pairOk=[r1,r2].some((m)=>m&&m.rankN>=3);
+  take(d);take(r1);take(r2);
+  roles.door={member:d,reason:dr,warn:dw};
+  roles.r1={member:r1,reason:r1r,warn:r1w||(r1&&!pairOk?"⚠ ペアに士長以上がいません":null)};
+  roles.r2={member:r2,reason:r2r,warn:r2w||(r2&&!pairOk?"⚠ ペアに士長以上がいません":null)};
 
-  // ===== 2. ドアコン（R1・R2確保後の残りから） =====
-  let d,dr,dw;
-  if(rc>=3){if(rescueLeader&&!used.has(rescueLeader.id)){d=rescueLeader;dr="① 救助隊3名以上 → 救助小隊長";}
-    else{d=free(rescueAll).sort(byRank)[0];dr="救助隊3名以上 → 階級上位の救助隊員";dw=d?null:"救助隊の残員なし";}}
-  else if(rc===2){let c=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3&&!m.leader).sort(byRank);
-    if(c.length){d=c[0];dr="① 救助隊2名 → 消防係（士長以上）";}
-    else{c=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3).sort(byRank);
-      if(c.length){d=c[0];dr="消防小隊長が担当（他に士長以上なし）";dw="指揮者と消防小隊長が重複";}
-      else{d=free(pool).sort(byRank)[0];dr="該当者なし→代替";dw="ドアコン該当者なし";}}}
-  else{d=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=3).sort(byRank)[0]||free(pool).sort(byRank)[0];dr="救助隊2名未満 → 消防係から";dw="救助隊が規定人数（2名）未満";}
-  take(d);roles.door={member:d,reason:dr,warn:dw};
-
-  // ===== 3. 指揮者（残りから） =====
+  // ===== 2. 指揮者（残りの消防隊から） =====
   const fireLeaders=free(pool).filter((m)=>m.unit==="消防隊"&&m.leader).sort(byRank);
   let s,sr,sw;
   if(fireLeaders.length){s=fireLeaders[0];sr="① 消防係の小隊長（"+s.appa+"隊長）";}
   else{const f4=free(pool).filter((m)=>m.unit==="消防隊"&&m.rankN>=4).sort(byRank);
     if(f4.length){s=f4[0];sr="② 消防係 司令補以上";}
-    else if(rescueLeader&&!used.has(rescueLeader.id)){s=rescueLeader;sr="③ 救助係の小隊長";}
-    else{s=free(pool).sort(byRank)[0];sr="該当者なし→代替";sw="指揮者の要件該当者なし";}}
+    else{const rescueLeader=pool.find((m)=>m.unit==="救助隊"&&m.leader);
+      if(rescueLeader&&!used.has(rescueLeader.id)){s=rescueLeader;sr="③ 救助係の小隊長";}
+      else{s=free(pool).sort(byRank)[0];sr="該当者なし→代替";sw="指揮者の要件該当者なし";}}}
   take(s);roles.shiki={member:s,reason:sr,warn:sw};
 
-  // ===== 4. 伝令 =====
+  // ===== 3. 伝令 =====
   const rest=free(pool).sort(byRank);take(rest[0]);
   roles.denrei={member:rest[0],reason:"残員より",warn:rest[0]?null:"伝令該当者なし"};
   return {roles,rc,benched:free(pool)};
