@@ -187,7 +187,8 @@ function RoleCard({meta,data,prevMember,pool,isEdit,onToggleEdit,onSelect}){
 }
 
 function EntryView({units,dutyKey}){
-  const pool=useMemo(()=>buildPool(units),[units]);
+  const unitsKey=JSON.stringify(units);
+  const pool=useMemo(()=>buildPool(units),[unitsKey]);
   const round1Auto=useMemo(()=>assignR1(pool),[pool]);
   const [overEntry,setOverEntry]=useState({});
   const [editKey,setEditKey]=useState(null);
@@ -405,7 +406,8 @@ function assembleWater(units,quals){
 function QualBadge({q}){if(!q)return null;return(<span style={{fontSize:9,color:C.dim}}>{q.kikan?"機":"　"} {q.boat?"舟":"　"} {q.license||"—"}</span>);}
 
 function WaterView({units,quals,openQual}){
-  const res=useMemo(()=>assembleWater(units,quals),[units,quals]);
+  const unitsKey=JSON.stringify(units);
+  const res=useMemo(()=>assembleWater(units,quals),[unitsKey,quals]);
   return (<>
     <div className="flex items-center justify-between">
       <span style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:15,color:C.blue}}>水難 車両編成</span>
