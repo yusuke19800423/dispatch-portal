@@ -78,11 +78,18 @@ function buildPool(units){
     const unit=UNIT_HOME[name]==="救助隊"?"救助隊":"消防隊";
     pool.push({id:id++,name,appa,slot,unit,leader:slot==="隊長",rank:rankOf(name),rankN:rankPt(name)});
   };
-  for(const appa of ["蓮田1","蓮田2"]){const u=units[appa];if(!u)continue;add(u.c,appa,"隊長");(u.m||[]).forEach((n)=>add(n,appa,"隊員"));add(u.k,appa,"機関員");}
+  // 蓮田1・蓮田2：隊長・隊員のみ（機関員はポンプ操作があるため進入候補から除外）
+  for(const appa of ["蓮田1","蓮田2"]){const u=units[appa];if(!u)continue;add(u.c,appa,"隊長");(u.m||[]).forEach((n)=>add(n,appa,"隊員"));}
+  // 救助1：隊長・隊員・機関員すべて含める
   const r=units["救助1"];if(r){add(r.c,"救助1","隊長");(r.m||[]).forEach((n)=>add(n,"救助1","隊員"));add(r.k,"救助1","機関員");}
-  // 重複除去（同じ人が複数の車両に登録されている場合、最初の登録を優先）
+  // 重複除去：救助1に同じ人がいれば救助1側を優先
+  const rescue1Names=new Set();
+  const r2=units["救助1"];
+  if(r2){[r2.c,...(r2.m||[]),r2.k].filter(Boolean).forEach(n=>rescue1Names.add(n));}
   const seen=new Set();
-  return pool.filter(m=>{if(seen.has(m.name))return false;seen.add(m.name);return true;});
+  // 救助1のエントリを先に確定
+  const sorted=[...pool.filter(m=>m.appa==="救助1"),...pool.filter(m=>m.appa!=="救助1")];
+  return sorted.filter(m=>{if(seen.has(m.name))return false;seen.add(m.name);return true;});
 }
 
 function assignR1(pool){
