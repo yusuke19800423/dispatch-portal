@@ -351,7 +351,21 @@ function assembleWater(units,quals){
     warnings.push("蓮田機材1：ボート免許保持者がいないため組成不可");
   }
 
-  // ===== 1. 救助1：元乗員（特に小隊長）を最大限残し2名に調整（補充は機関員資格者を優先） =====
+  // ===== 0.5. 機材1の2人目を全員から先に確保（消防隊・機関員認定なしを最優先） =====
+  let kizaiP2=null;
+  if(kizaiP1&&kizaiTarget>=2){
+    const allFree=free();
+    // 消防隊・機関員認定なし・免許なし(大型・中型どちらも不可)を最優先
+    const fireNoKikanNoLic=allFree.filter((p)=>p.home==="消防隊"&&!p.q.kikan&&p.q.license!=="大型"&&p.q.license!=="中型").sort((a,b)=>a.rankN-b.rankN);
+    // 次点：消防隊・機関員認定なし
+    const fireNoKikan=allFree.filter((p)=>p.home==="消防隊"&&!p.q.kikan&&!fireNoKikanNoLic.includes(p)).sort((a,b)=>a.rankN-b.rankN);
+    // フォールバック：その他（機関員なし優先）
+    const others=allFree.filter((p)=>!(p.home==="消防隊"&&!p.q.kikan)).sort((a,b)=>{
+      const aOk=a.q.kikan?1:0,bOk=b.q.kikan?1:0; return aOk-bOk||a.rankN-b.rankN;
+    });
+    kizaiP2=fireNoKikanNoLic[0]||fireNoKikan[0]||others[0]||null;
+    if(kizaiP2) take(kizaiP2);
+  }
   const rescueNeed=CAR_LICENSE["救助1"];
   const rescueOrig=free().filter((p)=>p.origCar==="救助1").sort(byOrigLeader);
   let rescueTeam=[];
@@ -409,22 +423,14 @@ function assembleWater(units,quals){
     if(!engineer) warnings.push(car+"：機関員認定・"+need+"免許を満たす乗員がいません");
   });
 
-  // ===== 4. 蓮田機材1：確保済みのボート免許者(1人目)に、目標人数に応じて2人目を付ける =====
+  // ===== 4. 蓮田機材1：確保済みのボート免許者(1人目)＋先確保の2人目 =====
   let kizai=null;
   if(kizaiP1){
     if(kizaiTarget>=2){
-      const restAll=free();
-      const fireNoKikan=restAll.filter((p)=>p.home==="消防隊"&&!p.q.kikan).sort((a,b)=>a.rankN-b.rankN);
-      const others=restAll.filter((p)=>!(p.home==="消防隊"&&!p.q.kikan)).sort((a,b)=>{
-        const aOk=a.q.kikan?1:0, bOk=b.q.kikan?1:0;
-        return aOk-bOk || a.rankN-b.rankN;
-      });
-      const rest=fireNoKikan.concat(others);
-      const p2=rest[0]||null;
+      const p2=kizaiP2||null;
       let driver=kizaiP1.q.kikan&&licenseOK(kizaiP1.q.license,"中型")?kizaiP1:null;
       let driverNote=driver?"1人目（ボート）が機関員兼務":null;
       if(!driver&&p2&&p2.q.kikan&&licenseOK(p2.q.license,"中型")){ driver=p2; driverNote="2人目が機関員（1人目は要件未達）"; }
-      if(p2) take(p2);
       if(!driver) warnings.push("蓮田機材1：機関員（中型免許＋認定）を満たす乗員がいません");
       kizai={p1:kizaiP1,p2,driver,driverNote,single:false};
     } else {
