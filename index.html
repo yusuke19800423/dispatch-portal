@@ -300,6 +300,7 @@ function EntryView({units,dutyKey}){
 }
 
 const CAR_LICENSE={"蓮田1":"大型","蓮田2":"中型","救助1":"中型"};
+const CAR_DISPLAY=(car,mo)=>(car==="蓮田1"&&mo===8)?"蓮田化学1":car;
 const HOME_PRI={"消防隊":0,"救助隊":1,"救急隊":2,"指令":3};
 
 function assembleWater(units,quals){
@@ -446,7 +447,7 @@ function assembleWater(units,quals){
 
 function QualBadge({q}){if(!q)return null;return(<span style={{fontSize:9,color:C.dim}}>{q.kikan?"機":"　"} {q.boat?"舟":"　"} {q.license||"—"}</span>);}
 
-function WaterView({units,quals,openQual}){
+function WaterView({units,quals,openQual,mo}){
   const unitsKey=JSON.stringify(units);
   const res=useMemo(()=>assembleWater(units,quals),[unitsKey,quals]);
   return (<>
@@ -465,7 +466,7 @@ function WaterView({units,quals,openQual}){
         return (
           <div key={car} className="rounded-lg p-3" style={{background:C.panel,border:"1px solid "+(cc.team.length<2?C.red:C.line)}}>
             <div className="flex items-center justify-between mb-1">
-              <span style={{fontWeight:700,fontSize:13,color:car==="救助1"?C.amber:C.text}}>{car}</span>
+              <span style={{fontWeight:700,fontSize:13,color:car==="救助1"?C.amber:C.text}}>{CAR_DISPLAY(car,mo)}</span>
               <span style={{fontSize:9,color:C.dim}}>{"運転:"+CAR_LICENSE[car]+"免許"}</span>
             </div>
             {cc.team.map((p,i)=>{const q=quals[p.name];const isEng=cc.engineer===p.name;
@@ -608,7 +609,7 @@ function App(){
             <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))"}}>
               {["蓮田1","蓮田2","救助1"].map((appa)=>{const u=units[appa]||{c:null,m:[],k:null};const isR=appa==="救助1";
                 return (<div key={appa} className="rounded p-2" style={{background:C.panel,border:"1px solid "+C.line}}>
-                  <div style={{fontWeight:700,fontSize:13,color:isR?C.amber:C.text,marginBottom:4}}>{appa}</div>
+                  <div style={{fontWeight:700,fontSize:13,color:isR?C.amber:C.text,marginBottom:4}}>{CAR_DISPLAY(appa,duty.mo)}</div>
                   <div className="flex items-center gap-2 mb-1" style={{fontSize:11}}><span style={{color:C.dim,width:42}}>隊長</span><Picker value={u.c} onChange={(v)=>editField(appa,"c",v)} /></div>
                   {(u.m||[]).map((nm,mi)=>(<div key={mi} className="flex items-center gap-2 mb-1" style={{fontSize:11}}>
                     <span style={{color:C.dim,width:42}}>隊員</span><Picker value={nm} onChange={(v)=>editField(appa,"m",v,mi)} />
@@ -636,7 +637,7 @@ function App(){
             </section>
           )}
           {view==="entry"?<EntryView units={units} dutyKey={key} />
-          :view==="water"?<WaterView units={units} quals={quals} openQual={()=>setShowQual(true)} />
+          :view==="water"?<WaterView units={units} quals={quals} openQual={()=>setShowQual(true)} mo={duty.mo} />
           :(<div className="rounded-lg p-5" style={{background:C.panel,border:"1px dashed "+sys.color}}>
               <div style={{fontFamily:"'Zen Kaku Gothic New',sans-serif",fontWeight:900,fontSize:18,color:sys.color}}>{sys.name}</div>
               <p style={{fontSize:13,color:C.dim,marginTop:8,lineHeight:1.7}}>この体制はまだ役割選定ルールが未設定です。役割と選定条件を教えていただければ組み込みます。</p>
